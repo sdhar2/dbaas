@@ -1,0 +1,21 @@
+---
+- name: Restart dbaas service on DatabaseCluster 
+  hosts: dbaas
+  sudo: yes
+  sudo_user: root
+  
+  tasks:
+  - name: stop the pgpool compose file
+    command: docker-compose -f /arris/compose/pgpool-compose.yml stop
+    async: 60
+    poll: 10   
+     
+  - name: rm pgpool 
+    command: docker-compose -f /arris/compose/pgpool-compose.yml rm --force
+    async: 60
+    poll: 10   
+     
+  - name: start the pgpool compose file
+    command: docker-compose -f /arris/compose/pgpool-compose.yml up -d
+    async: 60
+    poll: 10       

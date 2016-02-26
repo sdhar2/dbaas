@@ -1,0 +1,2 @@
+56 23 * * * sudo /usr/sbin/clean_logs
+

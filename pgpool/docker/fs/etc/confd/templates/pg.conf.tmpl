@@ -1,0 +1,3 @@
+pgpool=[{{range $key := ls "/database/pgpool"}} {{printf "{/database/pgpool/%s" $key}} {{getv (printf "/database/pgpool/%s" $key)}} false } {{end}}]
+postgres=[{{range $key := ls "/database/postgres"}} {{printf "{/database/postgres/%s" $key}} {{getv (printf "/database/postgres/%s" $key)}} false } {{end}}]
+

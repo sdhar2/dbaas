@@ -1,0 +1,30 @@
+! Configuration File for keepalived pgpool
+! Copyright 2015, Arris Inc
+
+vrrp_script chk_pgpool {
+	script "/usr/sbin/check_generic ' pgpool: '"
+	interval 2
+	weight -51
+        fall 1
+        rise 1
+}
+
+vrrp_instance PGPOOL_1 {
+    state MASTER
+    interface eth0
+    virtual_router_id VRID_MACRO
+    priority PRIORITY_MACRO
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    track_script {
+	chk_pgpool
+    }
+    virtual_ipaddress {
+	PGPOOL_VIP dev eth0
+    }
+}
+
+

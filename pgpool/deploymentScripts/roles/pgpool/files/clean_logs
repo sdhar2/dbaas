@@ -1,0 +1,1 @@
+/usr/bin/find /var/log/pgpool -type f -mtime +4 -exec /bin/rm -f '{}' \;

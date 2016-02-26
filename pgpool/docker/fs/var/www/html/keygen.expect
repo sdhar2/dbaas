@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+set sshdir [lindex $argv 0]
+spawn ssh-keygen -t rsa -f $sshdir/id_rsa
+expect "Enter passphrase*"
+send "\n"
+expect "Enter same passphrase again:*"
+send "\n"
+expect eof

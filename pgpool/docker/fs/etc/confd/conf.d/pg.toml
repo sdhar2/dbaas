@@ -1,0 +1,7 @@
+[template]
+src = "pg.conf.tmpl"
+dest = "/tmp/pg.conf"
+keys = [
+  "/database",
+    ]
+reload_cmd = "sh /etc/confd/updateConfig.sh"

@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+set vmcontainerip [lindex $argv 0]
+set sshkeypath [lindex $argv 1]
+set sshpassword [lindex $argv 2]
+spawn ssh-copy-id -i $sshkeypath/id_rsa.pub fldengr@$vmcontainerip
+expect "*?re ?ou ?sure*"
+send "yes\n"
+expect "*?assword:*"
+send "Only4Support\n"
+expect eof

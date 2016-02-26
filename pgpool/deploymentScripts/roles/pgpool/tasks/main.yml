@@ -1,0 +1,83 @@
+---
+    - name: copy the pgpool keepalived template file
+      copy: src=keepalived.conf.pgpool.tmpl dest=/etc/keepalived/keepalived.conf.pgpool.tmpl mode=0755
+      when: single_vm_deployment == "no"
+    - name: update the priority ip on config template file
+      command: sed -i "s/PRIORITY_MACRO/{{ansible_eth0.ipv4.address.split('.')[3]}}/g" /etc/keepalived/keepalived.conf.pgpool.tmpl
+      when: single_vm_deployment == "no"
+    - name: look up the ip of the VIP
+      shell: host dbaascluster | cut -d" " -f4 | cut -d. -f4  
+      register: vrid
+    - name: update the virtual router id on config template file
+      command: sed -i "s/VRID_MACRO/{{vrid.stdout}}/g" /etc/keepalived/keepalived.conf.pgpool.tmpl            
+      when: single_vm_deployment == "no"
+    - name: copy the pgpool compose file
+      copy: src=pgpool-compose.yml dest=/arris/compose/pgpool-compose.yml mode=0755
+    - name: update the host ip on compose file
+      command: sed -i "s/HOST_IP_MACRO/{{ansible_eth0.ipv4.address}}/g" /arris/compose/pgpool-compose.yml
+    - name: update the host name on compose file
+      command: sed -i "s/HOST_NAME_MACRO/{{ansible_hostname}}/g" /arris/compose/pgpool-compose.yml        
+    - name: update the HA flag on compose file for multi-VM environment
+      command: sed -i "s/HAMODE_MACRO/HA/g" /arris/compose/pgpool-compose.yml
+      when: single_vm_deployment == "no"
+    - name: update the HA flag on compose file for single VM environment
+      command: sed -i "s/HAMODE_MACRO/off/g" /arris/compose/pgpool-compose.yml
+    - name: look up the ELK DNS name
+      shell: nslookup elk | grep "elk" | awk '{ print $2}'  
+      register: nslookup
+    - name: update ELK DNS name on compose file
+      command: sed -i "s/ELK_DNSNAME_MACRO/{{nslookup.stdout}}/g" /arris/compose/pgpool-compose.yml           
+    - name: Creates directory
+      file: path=/usr/local/dumprestorewiz state=directory mode=0777 
+      ignore_errors: yes
+    - name: copy the backup/restore files
+      copy: src={{ item }} dest=/usr/local/dumprestorewiz/ owner=root mode=0755
+      with_fileglob:
+        - dumprestorewiz/*
+    - name: soft link for db_dump
+      command: ln -s /usr/local/dumprestorewiz/db_dump.sh /usr/sbin/db_dump.sh  
+      ignore_errors: yes      
+    - name: soft link for db_restore
+      command: ln -s /usr/local/dumprestorewiz/db_restore.sh /usr/sbin/db_restore.sh
+      ignore_errors: yes      
+    - name: soft link for dump_restore_wizard
+      command: ln -s /usr/local/dumprestorewiz/dump_restore_wizard.sh /usr/sbin/dump_restore_wizard.sh    
+      ignore_errors: yes        
+    - name: copy daily backup command for cron
+      copy: src=daily_backup_db_dump.sh dest=/usr/sbin/daily_backup_db_dump.sh mode=0755        
+    - name: copy clean_logs file
+      copy: src=clean_logs dest=/usr/sbin/clean_logs mode=0755 
+    - name: copy crontab file
+      copy: src=clean_logs_crontab dest=/usr/sbin/clean_logs_crontab mode=0755 
+    - name: copy script to load crontab
+      copy: src=update_cron.sh dest=/usr/sbin/update_cron.sh mode=055                                     
+    - shell: update_cron.sh
+      ignore_errors: yes
+    - name: Grab iptables rules for survey of firewall (INPUT rules only)
+      shell: iptables -n --list INPUT
+      register: iptablesinputtablerules
+      always_run: yes
+    - name: punch the holes in the firewall
+      command: iptables -I INPUT -p tcp --dport {{ item }} -j ACCEPT
+      when: iptablesinputtablerules.stdout.find("dpt:{{ item }} ") == -1
+      with_items:
+         - 9999
+         - 49155
+         - 8880
+         - 8275
+         - 8277
+         - 7502
+      notify: save iptables
+    - name:  pull the docker images from compose file
+      command: docker-compose -f /arris/compose/pgpool-compose.yml pull 
+      async: 180
+    - name: start the compose file
+      command: docker-compose -f /arris/compose/pgpool-compose.yml up -d
+    - name: kill status checker script
+      shell: killall pgpool_status_checker.sh
+      ignore_errors: true
+    - name: start status checker script
+      shell: nohup /usr/sbin/pgpool_status_checker.sh  &
+    - name: keepalived
+      service: name=keepalived state=restarted
+      when: single_vm_deployment == "no"

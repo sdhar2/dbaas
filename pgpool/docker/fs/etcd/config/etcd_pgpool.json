@@ -1,0 +1,25 @@
+[
+	{
+	 "Static":
+	  [
+	    {
+		"key": "/config/advisor/pgpool@$VarHostName",
+		"value": "$VarHostIP:8275"    
+	    },
+	    {
+        "key": "/productGroups/dbaas/pgpool@$VarHostName",
+        "value": "$VarHostIP"
+        }
+	  ],
+	  "KeepAlive" :
+	  [
+	    {
+	      "key": "/database/pgpool/pgpool$VarHostIP",
+	      "value": "$VarHostIP",
+	      "healthcheck":"/opt/etcd/status_checkers/generic_key_checker.sh",
+	      "interval" :60,
+	      "initialdelay":300
+	    }
+	  ]
+	}
+]

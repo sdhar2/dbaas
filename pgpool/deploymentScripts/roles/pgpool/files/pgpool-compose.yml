@@ -1,0 +1,104 @@
+pgpool:
+  image: dockerrepo:5000/arrs/arrs-cloud-base-pgpool:1.3.0.42
+  stdin_open: true
+  tty: true
+  restart: always
+  ports:
+  - "9999:9999"
+  - "8880:80"
+  - "49155:49155"
+  log_driver: "json-file"
+  log_opt:
+   max-size: "100m"
+   max-file: "10"
+  environment:
+  - PG_VIRTUAL_IP=HOST_IP_MACRO
+  - HOST_IP=HOST_IP_MACRO
+  - HOST_NAME=HOST_NAME_MACRO
+  - MONITOR_PORT=8275
+  - HAMode=HAMODE_MACRO
+  volumes:
+  - /opt/etcd/config:/opt/etcd/config
+  - /usr/local/dbbackups:/usr/local/dbbackups
+  - /var/log/pgpool:/var/log/pgpool
+  - /var/log/pgpoolDocker:/tmp
+  - /usr/local/conf:/usr/local/etc
+
+appObserverPgpool:
+  image: dockerrepo:5000/arrs/arrs-cloud-base-app-observer:2.0.0.3
+  restart: always
+  log_driver: "json-file"
+  log_opt:
+   max-size: "100m"
+   max-file: "10"
+  ports:
+   - "8275:8275"
+   - "8277:8277"
+  environment:
+   SECURE_PORT: 8275
+   NON_SECURE_PORT: 8277
+   PRODUCT_NAME: ACP-PGPOOL
+   APP_WEBSERVICE_FQDN: HOST_IP_MACRO
+   APP_WEBSERVICE_PORT: 7502
+  volumes:
+   - /var/opt/app-observer-pgpool/config:/opt/app-observer/conf/external
+   - /var/opt/app-observer-pgpool/logs:/opt/app-observer/logs
+
+pgpoolapp:
+  image: dockerrepo:5000/arrs/arrs-cloud-base-pgpool-app-monitor:1.2.0.23
+  stdin_open: true
+  tty: true
+  restart: always
+  log_driver: "json-file"
+  log_opt:
+   max-size: "100m"
+   max-file: "10"
+  ports:
+   - "7502:7502"
+  environment:
+   LISTEN_PORT: 7502 
+   APP_OBSERVER_PORT: 8277 
+   HOST_IP: HOST_IP_MACRO
+   HOST_NAME: HOST_NAME_MACRO   
+  volumes:
+   - /usr/sbin:/usr/local/sbin
+   - /var/log/app_monitor/pgpool:/tmp 
+   - /var/opt/app-monitor-pgpool/status_monitor/logs:/opt/status_monitor/logs 
+   
+keymanager:
+  image: dockerrepo:5000/arrs/arrs-cloud-base-keymanager:1.0.0.10
+  restart: always
+  stdin_open: true
+  tty: true
+  log_driver: "json-file"
+  log_opt:
+   max-size: "100m"
+   max-file: "10"
+  environment:
+  - HOST_IP=HOST_IP_MACRO
+  - HOST_NAME=HOST_NAME_MACRO
+  volumes:
+   - /var/log:/tmp
+  volumes_from:
+  - pgpool
+
+logstashforwarder:
+  image: dockerrepo:5000/arrs/arrs-cloud-base-logstash-forwarder:2.0.0.4
+  restart: always
+  log_driver: "json-file"
+  log_opt:
+   max-size: "100m"
+   max-file: "10"
+  environment:
+   LS_HEAP_SIZE: 1g
+   CA_CERT_LOCATION: /etc/elk-keys/ca.pem
+   ES_HOST: ELK_DNSNAME_MACRO
+   NODE_NAME: HOST_IP_MACRO
+  volumes:
+   - /var/opt/logstash-forwarder/log:/var/log/supervisor
+   - /var/opt/logstash-forwarder/conf:/etc/logstash-forwarder
+   - /var/opt/logstash-forwarder/keys:/etc/elk-keys
+   - /etc/localtime:/etc/localtime:ro
+   - /var/opt/:/var/opt/
+  volumes_from:
+   - pgpool 

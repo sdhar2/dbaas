@@ -1,0 +1,7 @@
+---
+- name: Deploy pgpool service on dbaas 
+  hosts: dbaas
+  sudo: true
+  sudo_user: root
+  roles:
+     - pgpool
