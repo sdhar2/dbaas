@@ -1,0 +1,11 @@
+#!/usr/bin/expect -f
+set dbnodeip [lindex $argv 0]
+set newnodeip [lindex $argv 1]
+set dbnodeuser [lindex $argv 2]
+set dbnodepw [lindex $argv 3]
+spawn ssh-copy-id -i /var/lib/pgsql/.ssh/id_rsa.pub "$dbnodeuser@$newnodeip -p 49154"
+expect "*?re ?ou ?sure*"
+send "yes\n"
+expect "*?assword:*"
+send "dbaas10\n"
+expect eof

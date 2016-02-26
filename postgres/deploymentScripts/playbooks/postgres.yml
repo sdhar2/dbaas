@@ -1,0 +1,8 @@
+---
+- name: Deploy postgres service on dbaas 
+  hosts: dbaas
+  sudo: true
+  sudo_user: root
+  serial: 1
+  roles:
+     - postgres

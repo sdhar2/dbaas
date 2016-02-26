@@ -1,0 +1,36 @@
+---
+- name: Restart dbaas service on DatabaseCluster 
+  hosts: dbaas
+  sudo: yes
+  sudo_user: root
+  
+  tasks:
+  - name: stop the compose file on the first host
+    command: docker-compose -f /arris/compose/postgres-compose.yml stop
+    when: inventory_hostname  == "{{ play_hosts[0] }}"
+  - wait_for: timeout=30
+
+  - name: rm postgres on the first host
+    command: docker-compose -f /arris/compose/postgres-compose.yml rm --force
+    when: inventory_hostname  == "{{ play_hosts[0] }}"
+  - wait_for: timeout=30
+
+  - name: start the compose file on the first host
+    command: docker-compose -f /arris/compose/postgres-compose.yml up -d
+    when: inventory_hostname  == "{{ play_hosts[0] }}"
+  - wait_for: timeout=240
+    
+  - name: stop the compose file on the second host
+    command: docker-compose -f /arris/compose/postgres-compose.yml stop
+    when: inventory_hostname  == "{{ play_hosts[1] }}"
+  - wait_for: timeout=30
+
+  - name: rm postgres on the second host
+    command: docker-compose -f /arris/compose/postgres-compose.yml rm --force
+    when: inventory_hostname  == "{{ play_hosts[1] }}"
+  - wait_for: timeout=30
+
+  - name: start the compose file on the second host
+    command: docker-compose -f /arris/compose/postgres-compose.yml up -d
+    when: inventory_hostname  == "{{ play_hosts[1] }}"
+  - wait_for: timeout=30          

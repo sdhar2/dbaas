@@ -1,0 +1,25 @@
+[
+	{
+	 "Static":
+	  [
+	    {
+		"key": "/config/advisor/postgres@$VarHostName",
+		"value": "$VarHostIP:8175"    
+	    },
+	    {
+        "key": "/productGroups/dbaas/postgres@$VarHostName",
+        "value": "$VarHostIP"
+        }
+	  ],
+	  "KeepAlive" :
+	  [
+	    {
+	      "key": "/database/postgres/postgres$VarHostIP",
+	      "value": "$VarHostIP",
+	      "healthcheck":"/opt/etcd/status_checkers/generic_key_checker.sh",
+	      "interval" :30,
+	      "initialdelay":150
+	    }
+	  ]
+	}
+]

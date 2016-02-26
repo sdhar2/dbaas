@@ -1,0 +1,43 @@
+---
+    - name: copy the postgres compose file
+      copy: src=postgres-compose.yml dest=/arris/compose/postgres-compose.yml mode=0755
+    - name: copt the postgres reboot daemon file
+      copy: src=rebootPostgresDaemon.sh dest=/usr/sbin/rebootPostgresDaemon.sh mode=0755
+    - name: update the host ip on compose file
+      command: sed -i "s/HOST_IP_MACRO/{{ansible_eth0.ipv4.address}}/g" /arris/compose/postgres-compose.yml
+    - name: update the host name on compose file
+      command: sed -i "s/HOST_NAME_MACRO/{{ansible_hostname}}/g" /arris/compose/postgres-compose.yml      
+    - name: look up the ELK DNS name
+      shell: nslookup elk | grep "elk" | awk '{ print $2}'  
+      register: nslookup
+    - name: update ELK DNS name on compose file
+      command: sed -i "s/ELK_DNSNAME_MACRO/{{nslookup.stdout}}/g" /arris/compose/postgres-compose.yml           
+    - name: Grab iptables rules for survey of firewall (INPUT rules only)
+      shell: iptables -n --list INPUT
+      register: iptablesinputtablerules
+      always_run: yes
+    - name: punch the holes in the firewall
+      command: iptables -I INPUT -p tcp --dport {{ item }} -j ACCEPT
+      when: iptablesinputtablerules.stdout.find("dpt:{{ item }} ") == -1
+      with_items:
+         - 5432
+         - 49154
+         - 8175
+         - 8177
+         - 7501
+      notify: save iptables
+    - name: pull the docker images from the compose file
+      command: docker-compose -f /arris/compose/postgres-compose.yml pull 
+      async: 180
+    - name: start the compose file
+      command: docker-compose -f /arris/compose/postgres-compose.yml up -d
+    - name: kill the old status checker script if there is one
+      shell: killall postgres_status_checker.sh
+      ignore_errors: true
+    - name: start status checker script
+      shell: nohup /usr/sbin/postgres_status_checker.sh  &    
+    - name: kill the old reboot postgres daemon if there is one
+      shell: killall rebootPostgresDaemon.sh
+      ignore_errors: true
+    - name: start rebootPostgresDaemon.sh (needed to reboot in multi-master scenario)
+      shell: nohup /usr/sbin/rebootPostgresDaemon.sh &

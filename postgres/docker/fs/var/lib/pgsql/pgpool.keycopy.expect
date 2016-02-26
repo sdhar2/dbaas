@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+set pgpoolip [lindex $argv 0]
+set pgpooluser [lindex $argv 1]
+set pgpoolpw [lindex $argv 2]
+spawn ssh-copy-id -i /var/lib/pgsql/.ssh/id_rsa.pub "$pgpooluser@$pgpoolip -p 49155"
+expect "*?re ?ou ?sure*"
+send "yes\n"
+expect "*?assword:*"
+send "dbaas10\n"
+expect eof
