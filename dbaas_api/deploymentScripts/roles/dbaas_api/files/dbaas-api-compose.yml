@@ -1,0 +1,102 @@
+dbaasapi:
+  image: dockerrepo:5000/arrs/arrs-cloud-base-dbaas-api:1.0.0.1
+  stdin_open: true
+  tty: true
+  restart: always
+  privileged: true
+  log_driver: "json-file"
+  log_opt:
+   max-size: "100m"
+   max-file: "10"
+  ports:
+  - "9101:9101"
+  log_driver: "json-file"
+  log_opt:
+   max-size: "100m"
+   max-file: "10"
+  environment:
+  - LISTEN_PORT=9101
+  volumes:
+  - /var/opt/dbaas_api/logs:/opt/dbaas_api/logs
+  - /opt/etcd/config:/opt/etcd/config
+
+dbaasapiapp:
+  image: dockerrepo:5000/arrs/arrs-cloud-base-dbaas-api-app-monitor:1.0.0.0
+  stdin_open: true
+  tty: true
+  restart: always
+  privileged: true
+  ports:
+   - "7708:7708"
+  log_driver: "json-file"
+  log_opt:
+   max-size: "100m"
+   max-file: "10"   
+  environment:
+   LISTEN_PORT: 7708
+   APP_OBSERVER_PORT: 9077
+   HOST_IP: HOST_IP_MACRO
+   HOST_NAME: HOST_NAME_MACRO
+  volumes:
+   - /usr/sbin:/usr/local/sbin
+   - /var/log/app_monitor/dbaas_api:/tmp
+   - /var/opt/app-monitor-dbaas-api/status_monitor/logs:/opt/status_monitor/logs
+
+appObserverDbaasApi:
+  image: dockerrepo:5000/arrs/arrs-cloud-base-app-observer:2.0.0.3
+  restart: always
+  privileged: true
+  ports:
+   - "9075:9075"
+   - "9077:9077"
+  log_driver: "json-file"
+  log_opt:
+   max-size: "100m"
+   max-file: "10"  
+  environment:
+   SECURE_PORT: 9075
+   NON_SECURE_PORT: 9077
+   PRODUCT_NAME: ACP-DBAAS-API
+   APP_WEBSERVICE_FQDN: HOST_IP_MACRO
+   APP_WEBSERVICE_PORT: 7708
+  volumes:
+   - /var/opt/app-observer-dbaas-api/config:/opt/app-observer/conf/external
+   - /var/opt/app-observer-dbaas-api/logs:/opt/app-observer/logs
+  
+keymanager:
+  image: dockerrepo:5000/arrs/arrs-cloud-base-keymanager:1.0.0.9
+  stdin_open: true
+  tty: true
+  restart: always
+  privileged: true
+  log_driver: "json-file"
+  log_opt:
+   max-size: "100m"
+   max-file: "10"
+  environment:
+  - HOST_IP=HOST_IP_MACRO
+  - HOST_NAME=HOST_NAME_MACRO
+  volumes:
+   - /var/log:/tmp
+   - /opt/etcd/config:/opt/etcd/config
+
+
+logstashforwarder:
+  image: dockerrepo:5000/arrs/arrs-cloud-base-logstash-forwarder:2.0.0.4
+  restart: always
+  privileged: true
+  log_driver: "json-file"
+  log_opt:
+   max-size: "100m"
+   max-file: "10"  
+  environment:
+   LS_HEAP_SIZE: 1g
+   CA_CERT_LOCATION: /etc/elk-keys/ca.pem
+   ES_HOST: ELK_DNSNAME_MACRO
+   NODE_NAME: HOST_IP_MACRO
+  volumes:
+   - /var/opt/logstash-forwarder/log:/var/log/supervisor
+   - /var/opt/logstash-forwarder/conf:/etc/logstash-forwarder
+   - /var/opt/logstash-forwarder/keys:/etc/elk-keys
+   - /etc/localtime:/etc/localtime:ro
+   - /var/opt/dbaas_api/logs:/opt/dbaas_api/logs

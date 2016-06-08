@@ -1,0 +1,9 @@
+[
+	{
+        "componentName":    "dbaas_api",
+        "componentDescr":   "ARRIS Cloud Platform: DB Server API",
+        "containerName":    "arrs/arrs-cloud-base-dbaas-api",
+        "componentVersion": "1.0.0.0",
+        "installFileBase":  "arrs-cloud-database-api"
+	}
+]

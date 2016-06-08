@@ -1,0 +1,7 @@
+---
+- name: Deploy dbaas_api service on dbaas 
+  hosts: dbaas
+  sudo: true
+  sudo_user: root
+  roles:
+     - dbaas_api

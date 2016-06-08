@@ -1,0 +1,16 @@
+[
+{
+	 "Static":
+	  [
+	    {
+		"key": "/config/advisor/dbaas_api@$VarHostName",
+		"value": "$VarHostIP:9075"
+	    }
+	  ],
+	  "KeepAlive" :
+	  [
+	    {
+	    }
+	  ]
+	}
+] 
